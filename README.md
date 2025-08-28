@@ -11,7 +11,7 @@ A comprehensive ETF (Exchange-Traded Fund) comparison and analysis platform buil
 ![Stock Dashboard Analytics View](images/template2.png)
 ## 🚀 Features
 
-- **Real-time ETF Data**: Live market data from Yahoo Finance via yfinance API
+- **Real Daily ETF Data**: Live market data from Yahoo Finance via yfinance API
 - **Interactive Comparisons**: Side-by-side comparison of up to 3 ETFs
 - **Rich Visualizations**: Performance charts, holdings analysis, sector breakdowns
 - **Comprehensive Analytics**: Key metrics, historical performance, technical indicators
@@ -304,41 +304,6 @@ npx serve dist -l 5173
 
 #### Frontend
 - `VITE_API_BASE_URL`: Backend API base URL (default: `http://localhost:8000`)
-
-## 🤝 Contributing
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make changes** and add tests
-4. **Run tests**: 
-   ```bash
-   # Backend tests
-   cd backend && python -m pytest
-   
-   # Frontend tests (when available)
-   cd frontend && npm test
-   ```
-5. **Commit changes**: `git commit -m 'Add amazing feature'`
-6. **Push to branch**: `git push origin feature/amazing-feature`
-7. **Open a Pull Request**
-
-### Development Guidelines
-
-- **Code Style**: Follow PEP 8 for Python, ESLint config for TypeScript
-- **Type Safety**: Use type hints in Python, strict TypeScript configuration
-- **Testing**: Write tests for new features and bug fixes
-- **Documentation**: Update documentation for API changes
-- **Commit Messages**: Use conventional commit format
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-- **Issues**: Report bugs and feature requests on GitHub Issues
-- **Discussions**: Join community discussions on GitHub Discussions
-- **Documentation**: Visit the `/docs` endpoint for API documentation
 
 ## 🗺️ Roadmap
 
