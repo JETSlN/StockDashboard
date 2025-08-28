@@ -5,17 +5,24 @@ FastAPI router for fund-related endpoints that expose the fund service functions
 """
 
 from typing import List, Dict, Any, Union
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Body
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from db.models import get_db
-from services.fund_service import get_fund, get_fund_list, get_holdings, get_sector_allocations
+from services.fund_service import get_fund, get_fund_list, get_holdings, get_sector_allocations, insert_fund
 
 router = APIRouter(
     prefix="/api/funds",
     tags=["funds"],
     responses={404: {"description": "Fund not found"}}
 )
+
+
+class InsertFundRequest(BaseModel):
+    """Request model for inserting a new fund"""
+    symbol: str
+    include_history: bool = True
 
 
 def _parse_symbol_or_id(symbol_or_id: str) -> Union[str, int]:
@@ -189,6 +196,51 @@ async def get_fund_summary(
             "total_holdings": len(holdings),
             "total_sectors": len(sectors)
         }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.post("/", response_model=Dict[str, Any])
+async def insert_new_fund(
+    request: InsertFundRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Insert a new ETF fund by symbol.
+    
+    This endpoint fetches comprehensive ETF data from Yahoo Finance and stores it in the database.
+    It includes basic fund information, price history, holdings, sector allocations, and other metrics.
+    
+    Args:
+        request: InsertFundRequest containing symbol and optional include_history flag
+        
+    Returns:
+        Dictionary with success status, message, and fund data (if successful)
+        
+    Raises:
+        400: Invalid symbol format or fund already exists
+        422: Data retrieval failed (symbol may not exist)
+        500: Internal server error
+    """
+    try:
+        result = insert_fund(db, request.symbol, request.include_history)
+        
+        if result["success"]:
+            # Successfully inserted
+            return result
+        else:
+            # Failed to insert - determine appropriate HTTP status
+            if "already exists" in result["message"]:
+                raise HTTPException(status_code=400, detail=result["message"])
+            elif "Invalid symbol" in result["message"]:
+                raise HTTPException(status_code=400, detail=result["message"])
+            elif "Failed to retrieve data" in result["message"]:
+                raise HTTPException(status_code=422, detail=result["message"])
+            else:
+                raise HTTPException(status_code=500, detail=result["message"])
+                
     except HTTPException:
         raise
     except Exception as e:

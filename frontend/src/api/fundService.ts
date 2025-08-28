@@ -98,6 +98,85 @@ export async function getFundWithSectors(symbolOrId: string | number): Promise<{
 }
 
 /**
+ * Insert a new ETF fund by symbol
+ * Corresponds to: POST /api/funds/
+ * 
+ * @param symbol - ETF symbol (e.g., 'TLT')
+ * @param includeHistory - Whether to include price history (default: false to avoid rate limiting)
+ */
+export async function insertETF(symbol: string, includeHistory: boolean = false): Promise<{
+  success: boolean;
+  message: string;
+  fund?: ETF;
+}> {
+  // Basic validation before sending to server
+  const cleanSymbol = symbol.trim().toUpperCase();
+  
+  if (!cleanSymbol) {
+    return {
+      success: false,
+      message: 'Please enter a valid symbol',
+      fund: undefined
+    };
+  }
+  
+  if (cleanSymbol.length > 10) {
+    return {
+      success: false,
+      message: 'Symbol must be 10 characters or less',
+      fund: undefined
+    };
+  }
+  
+  // Check for invalid characters (only letters and numbers allowed)
+  if (!/^[A-Z0-9]+$/.test(cleanSymbol)) {
+    return {
+      success: false,
+      message: 'Symbol can only contain letters and numbers',
+      fund: undefined
+    };
+  }
+  
+  try {
+    return await apiRequest<{
+      success: boolean;
+      message: string;
+      fund?: ETF;
+    }>(API_ENDPOINTS.FUNDS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        symbol: cleanSymbol,
+        include_history: includeHistory
+      })
+    });
+  } catch (error: any) {
+    // Handle specific error cases
+    if (error.status === 400) {
+      return {
+        success: false,
+        message: error.message || 'Invalid symbol or fund already exists',
+        fund: undefined
+      };
+    } else if (error.status === 422) {
+      return {
+        success: false,
+        message: 'Symbol not found. Please verify this is a valid ETF or mutual fund symbol.',
+        fund: undefined
+      };
+    } else {
+      return {
+        success: false,
+        message: error.message || 'Failed to add fund. Please try again.',
+        fund: undefined
+      };
+    }
+  }
+}
+
+/**
  * Search ETFs by symbol or name (client-side filtering)
  * For more sophisticated search, you might want to implement server-side search
  */

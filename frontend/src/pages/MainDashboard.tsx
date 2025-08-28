@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, Target, Loader2, AlertCircle } from 'lucide-react';
+import { Activity, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -17,6 +17,7 @@ import {
 } from '@/api';
 import { listETFs } from '@/api/fundService';
 import type { ETF, PriceHistory, FundSummaryResponse, Holding } from '@/types';
+import { AddFundButton } from '@/components/AddFundButton';
 
 // Import components
 import ETFCard from '@/components/ETFCard';
@@ -487,20 +488,20 @@ export default function MainDashboard() {
   // Loading component
   const LoadingCard = ({ title }: { title: string }) => (
     <div className="flex-1 min-w-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-0 shadow-md rounded-lg p-6">
-      <div className="flex items-center justify-center space-x-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-sm text-muted-foreground">Loading {title}...</span>
-      </div>
+        <div className="flex items-center justify-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm text-muted-foreground">Loading {title}...</span>
+        </div>
     </div>
   );
 
   // Error component
   const ErrorCard = ({ title, error }: { title: string; error: string }) => (
     <div className="flex-1 min-w-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-0 shadow-md rounded-lg p-6 border-red-200">
-      <div className="flex items-center space-x-2 text-red-600">
-        <AlertCircle className="h-4 w-4" />
-        <span className="text-sm">Error loading {title}: {error}</span>
-      </div>
+        <div className="flex items-center space-x-2 text-red-600">
+          <AlertCircle className="h-4 w-4" />
+          <span className="text-sm">Error loading {title}: {error}</span>
+        </div>
     </div>
   );
 
@@ -526,7 +527,9 @@ export default function MainDashboard() {
                 <Activity className="w-3 h-3 mr-1" />
                 Live Data
               </Badge>
-
+              <AddFundButton 
+                onFundAdded={fetchETFs}
+              />
             </div>
           </div>
 
@@ -634,7 +637,7 @@ export default function MainDashboard() {
         {/* Detailed Analytics */}
         {getSelectedFunds().length > 0 && activeData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Holdings */}
+          {/* Holdings */}
             <HoldingsChart
               holdings={activeData.holdings}
               chartType={holdingsChartType}
@@ -643,7 +646,7 @@ export default function MainDashboard() {
               onChartTypeChange={setHoldingsChartType}
             />
 
-            {/* Sector Allocation */}
+          {/* Sector Allocation */}
             <SectorChart
               sectors={activeData.summary?.top_sectors || []}
               chartType={sectorChartType}

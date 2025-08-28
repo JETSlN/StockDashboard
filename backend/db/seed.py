@@ -12,11 +12,11 @@ import logging
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db.models import init_db, SessionLocal, ETF, ETFPriceHistory, ETFInfo
+from db.models import init_db, SessionLocal, ETF, ETFPriceHistory
 from db.ingest_yfinance import ETFDataIngester
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def create_sample_etfs():
@@ -162,7 +162,7 @@ def seed_with_real_data():
     logger.info("Seeding database with real ETF data...")
     
     # Use a smaller subset for seeding
-    seed_etfs = ['SPY', 'QQQ', 'VTI', 'BND', 'VEA']
+    seed_etfs = ['SPY', 'QQQ', 'VOO', 'VTI', 'IVV', 'IEMG', 'VEA', 'AGG', 'VWO', 'EFA']
     
     ingester = ETFDataIngester()
     
@@ -183,7 +183,6 @@ def clear_database():
     try:
         # Delete all records (cascading deletes will handle related tables)
         session.query(ETFPriceHistory).delete()
-        session.query(ETFInfo).delete()
         session.query(ETF).delete()
         
         session.commit()

@@ -25,7 +25,7 @@ from db.models import (
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Create session
@@ -61,6 +61,68 @@ class ETFDataIngester:
             logger.warning(f"Could not get {field}: {e}")
             return default
     
+    def _is_valid_etf(self, info: dict, symbol: str) -> bool:
+        """
+        Validate that the ticker info represents a valid ETF or mutual fund.
+        
+        Args:
+            info: The ticker.info dictionary from yfinance
+            symbol: The ticker symbol being validated
+            
+        Returns:
+            bool: True if this appears to be a valid ETF/fund, False otherwise
+        """
+        # Check if info is empty or contains minimal data
+        if not info or len(info) < 5:
+            logger.warning(f"Symbol {symbol}: Insufficient data returned")
+            return False
+        
+        # Check for key ETF/fund indicators
+        quote_type = info.get('quoteType', '').upper()
+        legal_type = info.get('legalType', '').upper()
+        long_name = info.get('longName', '')
+        
+        # Valid quote types for ETFs and mutual funds
+        valid_quote_types = {'ETF', 'MUTUALFUND', 'FUND'}
+        
+        # Check if it's explicitly marked as an ETF or mutual fund
+        if quote_type in valid_quote_types:
+            return True
+        
+        # Check legal type for fund indicators
+        if legal_type and any(fund_type in legal_type for fund_type in ['FUND', 'ETF', 'TRUST']):
+            return True
+        
+        # Check if the name contains ETF indicators
+        if long_name and any(indicator in long_name.upper() for indicator in ['ETF', 'FUND', 'TRUST']):
+            return True
+        
+        # Check for typical ETF fields that should exist
+        etf_fields = ['totalAssets', 'navPrice', 'yield', 'fundFamily', 'category']
+        etf_field_count = sum(1 for field in etf_fields if info.get(field) is not None)
+        
+        # If it has several ETF-specific fields, it's likely an ETF
+        if etf_field_count >= 2:
+            return True
+        
+        # Check if it has market data but no ETF characteristics (likely a stock)
+        if info.get('marketCap') and not any([
+            info.get('totalAssets'),
+            info.get('fundFamily'),
+            info.get('category'),
+            quote_type in valid_quote_types
+        ]):
+            logger.warning(f"Symbol {symbol}: Appears to be a stock, not an ETF/fund")
+            return False
+        
+        # If we get here and it has basic market data, we'll allow it but log a warning
+        if info.get('regularMarketPrice') or info.get('previousClose'):
+            logger.warning(f"Symbol {symbol}: Could not definitively identify as ETF/fund, but has market data. Proceeding with caution.")
+            return True
+        
+        logger.warning(f"Symbol {symbol}: Does not appear to be a valid ETF or fund")
+        return False
+    
     def ingest_etf_basic_info(self, symbol: str) -> Optional[ETF]:
         """
         Ingest basic ETF information with retry logic for rate limiting
@@ -72,6 +134,11 @@ class ETFDataIngester:
             try:
                 ticker = yf.Ticker(symbol)
                 info = ticker.info
+                
+                # Validate that this is actually a valid ETF/fund
+                if not self._is_valid_etf(info, symbol):
+                    logger.error(f"Symbol {symbol} is not a valid ETF or fund")
+                    return None
                 
                 # Check if ETF already exists
                 existing_etf = self.session.query(ETF).filter(ETF.symbol == symbol).first()

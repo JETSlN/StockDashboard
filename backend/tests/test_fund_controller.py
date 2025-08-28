@@ -18,7 +18,7 @@ class TestFundController:
         
     def _test_endpoint(self, method: str, endpoint: str, description: str, 
                       expected_status: int = 200, expected_keys: List[str] = None,
-                      should_be_list: bool = None) -> bool:
+                      should_be_list: bool = None, data: Dict = None) -> bool:
         """
         Test a single endpoint and validate response
         """
@@ -28,6 +28,10 @@ class TestFundController:
             
             if method == "GET":
                 response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+            elif method == "POST":
+                headers = {"Content-Type": "application/json"}
+                response = requests.post(f"{self.base_url}{endpoint}", 
+                                       json=data, headers=headers, timeout=10)
             else:
                 raise ValueError(f"Unsupported method: {method}")
                 
@@ -228,6 +232,78 @@ class TestFundController:
             expected_status=404,
             should_be_list=False
         )
+        
+        # Test 9: Insert fund endpoint tests
+        print("\n🔧 TESTING INSERT FUND ENDPOINT")
+        print("-" * 40)
+        
+        # Test invalid symbol format
+        self._test_endpoint(
+            "POST", "/api/funds/",
+            "Test insert fund with invalid symbol (should return 400)",
+            expected_status=400,
+            should_be_list=False,
+            data={"symbol": "INVALID@SYMBOL", "include_history": False}
+        )
+        
+        # Test empty symbol
+        self._test_endpoint(
+            "POST", "/api/funds/",
+            "Test insert fund with empty symbol (should return 400)",
+            expected_status=400,
+            should_be_list=False,
+            data={"symbol": "", "include_history": False}
+        )
+        
+        # Test SQL injection attempt
+        self._test_endpoint(
+            "POST", "/api/funds/",
+            "Test insert fund with SQL injection attempt (should return 400)",
+            expected_status=400,
+            should_be_list=False,
+            data={"symbol": "SPY'; DROP TABLE etfs; --", "include_history": False}
+        )
+        
+        # Test duplicate insertion (SPY should already exist)
+        self._test_endpoint(
+            "POST", "/api/funds/",
+            "Test insert existing fund SPY (should return 400)",
+            expected_status=400,
+            should_be_list=False,
+            data={"symbol": "SPY", "include_history": False}
+        )
+        
+        # Test valid but non-existent symbol (will likely fail due to rate limiting or symbol not found)
+        # This test may return 422 (symbol doesn't exist) or 500 (rate limited)
+        print(f"\n🔍 Testing: Insert non-existent fund symbol (expected to fail)")
+        print(f"   URL: POST {self.base_url}/api/funds/")
+        try:
+            response = requests.post(f"{self.base_url}/api/funds/", 
+                                   json={"symbol": "NONEXISTENT", "include_history": False},
+                                   headers={"Content-Type": "application/json"}, 
+                                   timeout=10)
+            print(f"   Status Code: {response.status_code}")
+            if response.status_code in [422, 500]:
+                print(f"   ✅ SUCCESS: Correctly handled non-existent symbol")
+                self.test_results.append({
+                    "test": "Insert non-existent fund symbol",
+                    "status": "PASSED",
+                    "reason": f"Correctly returned {response.status_code}"
+                })
+            else:
+                print(f"   ⚠️  Unexpected status code: {response.status_code}")
+                self.test_results.append({
+                    "test": "Insert non-existent fund symbol",
+                    "status": "WARNING",
+                    "reason": f"Unexpected status code: {response.status_code}"
+                })
+        except Exception as e:
+            print(f"   ❌ FAILED: {str(e)[:100]}")
+            self.test_results.append({
+                "test": "Insert non-existent fund symbol",
+                "status": "FAILED",
+                "reason": str(e)[:100]
+            })
 
     def print_summary(self):
         """Print test summary"""

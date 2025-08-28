@@ -1,13 +1,16 @@
 """
-Fund Service - Read-only ETF fund data retrieval
+Fund Service - ETF fund data retrieval and insertion
 
 All functions accept either symbol (str) or id (int) for ETF lookup.
 Minimal filters, comprehensive data shaped to match the database schema.
 """
 
+import re
 from typing import List, Dict, Any, Optional, Union
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import SQLAlchemyError
 from db.models import ETF, ETFHolding, SectorAllocation, FundOverview, FundOperations, EquityMetrics
+from db.ingest_yfinance import ETFDataIngester
 
 
 def _get_etf_by_symbol_or_id(db: Session, symbol_or_id: Union[str, int]) -> Optional[ETF]:
@@ -309,3 +312,117 @@ def get_sector_allocations(db: Session, symbol_or_id: Union[str, int]) -> List[D
         }
         for sector in sectors
     ]
+
+
+def _validate_symbol(symbol: str) -> str:
+    """
+    Validate and sanitize ETF symbol to prevent SQL injection and ensure valid format.
+    
+    Args:
+        symbol: Raw symbol input
+        
+    Returns:
+        Sanitized symbol string
+        
+    Raises:
+        ValueError: If symbol is invalid
+    """
+    if not symbol or not isinstance(symbol, str):
+        raise ValueError("Symbol must be a non-empty string")
+    
+    # Remove whitespace and convert to uppercase
+    symbol = symbol.strip().upper()
+    
+    # Validate symbol format: 1-10 alphanumeric characters, possibly with single dots/hyphens
+    # This covers most ETF symbols like SPY, QQQ, VTI, BRK.B, etc.
+    # Prevent multiple consecutive special characters or SQL injection patterns
+    if not re.match(r'^[A-Z0-9]+([.-][A-Z0-9]+)*$', symbol) or len(symbol) > 10:
+        raise ValueError(f"Invalid symbol format: {symbol}. Must be 1-10 alphanumeric characters with optional single dots or hyphens.")
+    
+    return symbol
+
+
+def insert_fund(db: Session, symbol: str, include_history: bool = True) -> Dict[str, Any]:
+    """
+    Insert a new ETF fund by symbol using the YFinance data ingester.
+    
+    Args:
+        db: Database session
+        symbol: ETF symbol (e.g., "SPY", "QQQ")
+        include_history: Whether to include price history data (default: True)
+        
+    Returns:
+        Dict containing the result status and fund data or error message
+        
+    Raises:
+        ValueError: If symbol is invalid
+        SQLAlchemyError: If database operation fails
+    """
+    try:
+        # Validate and sanitize the symbol
+        clean_symbol = _validate_symbol(symbol)
+        
+        # Check if fund already exists
+        existing_fund = db.query(ETF).filter(ETF.symbol == clean_symbol).first()
+        if existing_fund:
+            return {
+                "success": False,
+                "message": f"Fund {clean_symbol} already exists",
+                "fund": get_fund(db, clean_symbol)
+            }
+        
+        # Create ingester instance (it will use the provided db session indirectly)
+        ingester = ETFDataIngester()
+        
+        # Attempt to ingest the fund data
+        success = ingester.ingest_single_etf(clean_symbol, include_history)
+        
+        if not success:
+            return {
+                "success": False,
+                "message": f"Invalid symbol '{clean_symbol}'. Please ensure this is a valid ETF or mutual fund symbol.",
+                "fund": None
+            }
+        
+        # Refresh the session to get the newly inserted data
+        db.commit()
+        
+        # Get the newly inserted fund data
+        new_fund = get_fund(db, clean_symbol)
+        
+        if new_fund:
+            return {
+                "success": True,
+                "message": f"Successfully inserted fund {clean_symbol}",
+                "fund": new_fund
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Fund {clean_symbol} was processed but could not be retrieved",
+                "fund": None
+            }
+            
+    except ValueError as e:
+        # Symbol validation error
+        return {
+            "success": False,
+            "message": f"Invalid symbol: {str(e)}",
+            "fund": None
+        }
+    except SQLAlchemyError as e:
+        # Database error
+        db.rollback()
+        return {
+            "success": False,
+            "message": f"Database error: {str(e)}",
+            "fund": None
+        }
+    except Exception as e:
+        # Unexpected error
+        db.rollback()
+        return {
+            "success": False,
+            "message": f"Unexpected error: {str(e)}",
+            "fund": None
+        }
