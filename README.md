@@ -11,7 +11,7 @@ A comprehensive ETF (Exchange-Traded Fund) comparison and analysis platform buil
 ![Stock Dashboard Analytics View](images/template2.png)
 ## 🚀 Features
 
-- **Real-time ETF Data**: Live market data from Yahoo Finance via yfinance API
+- **Real Daily ETF Data**: Live market data from Yahoo Finance via yfinance API
 - **Interactive Comparisons**: Side-by-side comparison of up to 3 ETFs
 - **Rich Visualizations**: Performance charts, holdings analysis, sector breakdowns
 - **Comprehensive Analytics**: Key metrics, historical performance, technical indicators
