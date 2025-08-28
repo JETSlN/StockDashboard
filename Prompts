@@ -1,0 +1,117 @@
+1. (Research Prompt)
+Take-Home Interview 
+Objective
+The objective of this assignment is to build out a simple portfolio monitoring dashboard for a Portfolio Manager overseeing multiple funds. The dashboard should provide visibility into fund performance over time, allow users to expand each fund to view detailed holdings, and compare fund performance against peers.
+You’re welcome to use AI tools to write this application.
+Scope
+- Tech Stack: Python (Flask, FastAPI, etc.), React 
+- Deployment: Containerization is a bonus.
+Deliverables
+1. Source Code: All code committed to a public Git repository.
+2. README: Documentation for setup, usage, architectural decisions.
+3. If utilized AI Tools: All prompts used 
+Definitions:
+Portfolio Manager: This is a person who is in charge ofs investing money on behalf of other people or organizations. They decide where to put the money to help it grow and manage the risks.
+For the purpose of this assignment, you can assume the portfolio manager only invests in the NYSE stock market.
+Funds: The portfolio manager uses this money to buy different investments (like stocks or bonds). Each fund usually has a goal or strategy, like focusing on technology stocks or safe government bonds (ie. Multiple tickers per fund).
+Holdings: Holdings are simply the individual investments that a fund owns. For example, if a fund buys Apple, Google, and Microsoft stocks, those are its holdings. The holdings show exactly what the fund’s money is invested in.
+Peers: A fund may have peers that are managed by other competing firms
+You may make any assumptions as long as they’re explained. 
+Please breakdown this project for me and explain any definitions. 
+
+2. (Research Prompt)
+2. (Data Strategy Prompt)
+For this portfolio monitoring dashboard, I need guidance on the data strategy:
+
+1. Data Source Options:
+- Should I use real-time market data from financial APIs?
+- Or is it acceptable to use static/dummy data for demonstration purposes?
+
+2. Database Requirements:
+- What would be the best local database solution for this project considering:
+  - Need to store fund/holdings data
+  - Potential real-time price updates
+  - Development environment setup
+  - SQL vs NoSQL tradeoffs
+  
+3. Data Refresh Strategy:
+- If using real data, what should be the update frequency?
+- How to handle rate limits from financial APIs?
+- Caching considerations
+
+Please advise on the expected approach for data management in this take-home project.
+
+3. (Research Prompt) What tech stack should I use in this project? I was thinking I use React + Vite + ShadUI in the frontend and FastAPI + SQLite in the backend
+
+4. (Research Prompt) What data should be provided in a fund management dashboard? Give me a list of important data to compare/showcase a fund
+
+5. (Research Prompt) Does yfinance provide this data? Check yfinance api to see if this api fulfill the requirements to showcase a fund
+
+6. (Research Prompt) I was thinking in the backend we could have service, api, db. db will initialize the database and the data types and structure, service will be the methods of getting the data from the db, api will be the controllers for the endpoints. Is this a valid backend?
+
+7. (Research Prompt) In the frontend we can have components, api call to request the endpoint from the backend, types to structure the data the app is getting from the backend. Is this a valid frontend?
+
+8. (Research Prompt) Given my tech stack what is a rough draft of what my project file tree looks like. Please state each of the files purpose. 
+
+9. (Development) Given the data i listed. Please generate the models for an ETF/fund. This includes holdings, basic ETF information, price history, the fund sector investments, fund operations, equity metrics, and the overview of the fund
+
+10. (Research Prompt) What api method for the library yfinance is necessary to provide me the data I need for the dashboard?
+
+11. (Development Prompt) Given the methods I listed here and the ETF model, Please create ingest_yfinance.py which is a class that will fetch data from yfinance api then store it in the database.
+
+12. (Development Prompt) Please create the file seed.py to trigger the database initialization that includes the top 10 etfs in the database. Include methods like clearing the database, reinitializing the database, creating dummy data for the database and also creating real data for the database using yfinance. 
+
+Extra prompt: I am getting rate limited while using yfinance research methods on how to bypass the rate limiting factor. 
+
+13. (Development Prompt) Based on the models that is developed and data that is being gathered, please generate the 2 services. One for the overall data of the etf/fund and the other for the price history of the etf/fund. Generate only get methods in both services except include 1 insert method in the fund service which is to add new funds in the database that the user would want to compare. 
+
+14. (Development Prompt) Based on the services that is developed and data that is being gathered, please generate the 2 controllers. One for the overall data of the etf/fund and the other for the price history of the etf/fund. Generate only get endpoints in both controllers except include 1 insert endpoint in the fund service which is to add new funds in the database that the user would want to compare. 
+
+15. (Test Prompt) Create tests to test each endpoint for the controllers and run them to see if data is being gathered and represented correctly. 
+
+16. (Development Prompt) Based on the existing frontend dashboard, I want to refine the layout and structure. Here's the step by step layout I want to implement:
+
+**Dashboard Layout Structure:**
+
+1. **Header Section:** 
+   - Title and subtitle showing which funds are being compared
+   - Fund selection dropdowns (3 funds max like we have now)
+   - Add Fund button for adding new ETFs to the database
+
+2. **Main Comparison Chart Section:**
+   - Large performance comparison chart at the top
+   - Time period selector buttons (1M, 3M, YTD, 1Y, 3Y, 5Y)
+   - Toggle between percentage view vs price view
+   - Show all selected funds overlaid on same chart for easy comparison
+
+3. **Fund Summary Cards Row:**
+   - Display basic info cards for each selected fund
+   - Show current price, daily change, key metrics like P/E, Beta, Dividend Yield
+   - Make these cards responsive (stack on mobile)
+
+4. **Tab Selection for Deep Dive Analytics:**
+   - Tabs to switch between funds (like "VOO", "SPY", "QQQ" tabs)
+   - When you click a tab, it shows detailed analytics for that specific fund
+   - Only show tabs for funds that are actually selected
+
+5. **Selected Fund Deep Dive Section (based on active tab):**
+   - Key Metrics section: Expense ratio, AUM, inception date, etc.
+   - Holdings breakdown: Top 10 holdings with bar/pie chart toggle
+   - Sector allocation: Sector breakdown with bar/pie chart toggle
+   - Detailed performance metrics: YTD, 3Y, 5Y returns, volatility, etc.
+
+The idea is you can compare funds at the top, then dive deep into any specific fund using the tabs. Make this layout clean and professional looking using shadcn components. Keep the existing API calls and data fetching logic but reorganize the UI to follow this structure.
+
+@frontend/ 
+
+17. (Development Prompt) Based on the @Backend @Models, please generate the fund type which includes all the models in @models 
+
+18. (Development Prompt) Based on the @Backend @fund_controller and @price_controller please generate the api method for frontend. 
+
+19. (Test Prompt) Please generate test to test both the api methods in the frontend and also whether the data received from the backend are the correct types created in the frontend. 
+
+20. (Edit Prompt) Replace all dummy data from the @dashboard with data received using the api methods in the frontend. Use useeffect to call the api methods and gather data while the frontend is rendering then use usestate to store the data and display it in the frontend. 
+
+21. (Development Prompt) Here are the following @requirements.txt and @frontend. Please create a docker file for this. After please build the database by using @seed.py then run the backend. In the frontend please build then run the frontend. Make sure to start both servers in the backend and frontend. 
+
+22. (Writing Prompt) Please provide documentation on this entire project including the architecture, the techstack, the setup, and the tools used, the app features and also other documentation if necessary.
