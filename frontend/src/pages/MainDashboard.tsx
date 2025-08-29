@@ -375,6 +375,16 @@ export default function MainDashboard() {
   const updateSelectedFund = (fundIndex: number, symbol: string | null) => {
     setSelectedFunds(prev => {
       const newFunds = [...prev] as [string | null, string | null, string | null];
+      
+      // If selecting a symbol that's already selected elsewhere, clear the other occurrence
+      if (symbol) {
+        newFunds.forEach((existingSymbol, index) => {
+          if (index !== fundIndex && existingSymbol === symbol) {
+            newFunds[index] = null;
+          }
+        });
+      }
+      
       newFunds[fundIndex] = symbol;
       return newFunds;
     });
@@ -550,11 +560,21 @@ export default function MainDashboard() {
                   ) : errors.etfs ? (
                     <option disabled>Error loading ETFs</option>
                   ) : etfsList.length > 0 ? (
-                    etfsList.map((etf) => (
-                      <option key={etf.symbol} value={etf.symbol}>
-                        {etf.symbol} - {etf.long_name || etf.name || etf.short_name}
-                      </option>
-                    ))
+                    etfsList.map((etf) => {
+                      const isSelectedElsewhere = selectedFunds.some((selectedSymbol, selectedIndex) => 
+                        selectedIndex !== index && selectedSymbol === etf.symbol
+                      );
+                      return (
+                        <option 
+                          key={etf.symbol} 
+                          value={etf.symbol}
+                          disabled={isSelectedElsewhere}
+                        >
+                          {etf.symbol} - {etf.long_name || etf.name || etf.short_name}
+                          {isSelectedElsewhere ? ' (Already Selected)' : ''}
+                        </option>
+                      );
+                    })
                   ) : (
                     <option disabled>No ETFs available</option>
                   )}
